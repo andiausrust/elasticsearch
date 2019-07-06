@@ -1,0 +1,2 @@
+# -u credentials + elasticsearch endpoint
+curl -u elastic:WXdgoc8He13zFGsnuB3UgpMq https://d58891bb647a493880dcbfe52ae746e5.us-east-1.aws.found.io:9243

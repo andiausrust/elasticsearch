@@ -1,4 +1,4 @@
-# ======================== data-3 Elasticsearch Configuration =========================
+# ======================== Elasticsearch Configuration =========================
 #
 # NOTE: Elasticsearch comes with reasonable defaults for most settings.
 #       Before you set out to tweak and tune the configuration, make sure you
@@ -20,16 +20,19 @@ cluster.name: honey-logs
 #
 # Use a descriptive name for the node:
 #
-node.name: data-2
+node.name: data-1
 #
 # Add custom attributes to the node:
 #
-node.attr.zone: 3
-node.attr.temp: warm
+
+node.attr.zone: 2
+node.attr.temp: hot
 
 node.master: true
 node.data: true
 node.ingest: false
+
+
 #
 # ----------------------------------- Paths ------------------------------------
 #
@@ -70,11 +73,11 @@ network.host: [_local_, _site_]
 # Pass an initial list of hosts to perform discovery when new node is started:
 # The default list of hosts is ["127.0.0.1", "[::1]"]
 #
-discovery.zen.ping.unicast.hosts: ["172.31.20.46", "172.31.12.119"]
+discovery.zen.ping.unicast.hosts: ["172.31.20.46", "172.31.21.107"]
 #
 # Prevent the "split brain" by configuring the majority of nodes (total number of master-eligible nodes / 2 + 1):
 #
-discovery.zen.minimum_master_nodes: 2
+discovery.zen.minimum_master_nodes: 2 
 #
 # For more information, consult the zen discovery module documentation.
 #
@@ -89,3 +92,6 @@ discovery.zen.minimum_master_nodes: 2
 # ---------------------------------- Various -----------------------------------
 #
 # Require explicit names when deleting indices:
+#
+#action.destructive_requires_name: true
+
