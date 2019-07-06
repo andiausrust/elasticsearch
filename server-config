@@ -1,0 +1,198 @@
+# setup server, java is needed (java 8 is ok)
+
+# create elastic user
+sudo useradd elastic
+
+# increase the open file limit for the elastic user
+sudo vim /etc/security/limits.conf
+ 
+elastic - nofile 65536
+elastic - nproc 4096
+
+
+# increase memory map limit
+sudo vim /etc/sysctl.conf
+
+vm.swappiness = 10
+vm.max_map_count = 262144
+
+
+# reload the new sysctl value
+sudo sysctl -p
+
+# switch to elastic user
+sudo su - elastic
+
+# change into elastic user directory
+cd /home/elastic
+
+# download binary
+curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.2.4.tar.gz
+
+# unzip it
+tar -xzvf elasticsearch-6.2.4.tar.gz
+
+# remove tar.gz
+rm elasticsearch-6.2.4.tar.gz
+
+# rename
+mv elasticsearch-6.2.4/ elasticsearch
+
+# move to elasticsearch directory
+cd elasticsearch
+ll produces:
+
+drwxr-xr-x  2 elastic elastic   4096 Jul  5 17:18 bin
+drwxr-xr-x  2 elastic elastic   4096 Apr 12  2018 config
+drwxr-xr-x  2 elastic elastic   4096 Apr 12  2018 lib
+-rw-r--r--  1 elastic elastic  11358 Apr 12  2018 LICENSE.txt
+drwxr-xr-x  2 elastic elastic   4096 Apr 12  2018 logs
+drwxr-xr-x 16 elastic elastic   4096 Apr 12  2018 modules
+-rw-r--r--  1 elastic elastic 191887 Apr 12  2018 NOTICE.txt
+drwxr-xr-x  2 elastic elastic   4096 Apr 12  2018 plugins
+-rw-r--r--  1 elastic elastic   9268 Apr 12  2018 README.textile
+
+# adjust jvm heap space
+vim config/jvm.options
+
+# initial and maximum should be euqal otherwise the garbage collector is trying to optimize on an ongoing basis
+-Xms1g -> should be no more than 50% of available memory adjusted it to -Xms250m
+-Xmx1g -> should be no more than 50% of available memory adjusted it to -Xms250m	
+
+# start elasticsearch
+./bin/elasticsearch -d -p pid
+
+# checking the logs
+less logs/elasticsearch.log 
+
+# check elasticserach instance via api
+curl localhost:9200
+{
+  "name" : "cvbWcXv",
+  "cluster_name" : "elasticsearch",
+  "cluster_uuid" : "z9ReEKx7Ttuc0VIYJh0oig",
+  "version" : {
+    "number" : "6.2.4",
+    "build_hash" : "ccec39f",
+    "build_date" : "2018-04-12T20:37:28.497551Z",
+    "build_snapshot" : false,
+    "lucene_version" : "7.2.1",
+    "minimum_wire_compatibility_version" : "5.6.0",
+    "minimum_index_compatibility_version" : "5.0.0"
+  },
+  "tagline" : "You Know, for Search"
+}
+
+# stop the instance with pid (wrote to pid before)
+kill `cat pid`
+
+example configuration of a cluster with three nodes: 1 master-node, 2 data-nodes (conf/elasticserch.yml)
+
+
+# data-1
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Last login: Fri Jul  5 17:01:34 2019 from 213-240-121-101.adsl.highway.telekom.at
+
+       __|  __|_  )
+       _|  (     /   Amazon Linux AMI
+      ___|\___|___|
+
+https://aws.amazon.com/amazon-linux-ami/2018.03-release-notes/
+-bash: warning: setlocale: LC_CTYPE: cannot change locale (UTF-8): No such file or directory
+[ec2-user@ip-172-31-47-149 ~]$ sudo su - elastic
+Last login: Fri Jul  5 17:01:45 UTC 2019 on pts/0
+[elastic@ip-172-31-47-149 ~]$ cd /home/elastic/elasticsearch/
+[elastic@ip-172-31-47-149 elasticsearch]$ cd config/elasticsearch.yml 
+-bash: cd: config/elasticsearch.yml: Not a directory
+[elastic@ip-172-31-47-149 elasticsearch]$ cat config/elasticsearch.yml 
+# ======================== Elasticsearch Configuration =========================
+#
+# NOTE: Elasticsearch comes with reasonable defaults for most settings.
+#       Before you set out to tweak and tune the configuration, make sure you
+#       understand what are you trying to accomplish and the consequences.
+#
+# The primary way of configuring a node is via this file. This template lists
+# the most important settings you may want to configure for a production cluster.
+#
+# Please consult the documentation for further information on configuration options:
+# https://www.elastic.co/guide/en/elasticsearch/reference/index.html
+#
+# ---------------------------------- Cluster -----------------------------------
+#
+# Use a descriptive name for your cluster:
+#
+cluster.name: honey-logs
+#
+# ------------------------------------ Node ------------------------------------
+#
+# Use a descriptive name for the node:
+#
+node.name: data-2
+#
+# Add custom attributes to the node:
+#
+node.attr.zone: 3
+node.attr.temp: warm
+
+node.master: true
+node.data: true
+node.ingest: false
+#
+# ----------------------------------- Paths ------------------------------------
+#
+# Path to directory where to store the data (separate multiple locations by comma):
+#
+#path.data: /path/to/data
+#
+# Path to log files:
+#
+#path.logs: /path/to/logs
+#
+# ----------------------------------- Memory -----------------------------------
+#
+# Lock the memory on startup:
+#
+#bootstrap.memory_lock: true
+#
+# Make sure that the heap size is set to about half the memory available
+# on the system and that the owner of the process is allowed to use this
+# limit.
+#
+# Elasticsearch performs poorly when the system is swapping the memory.
+#
+# ---------------------------------- Network -----------------------------------
+#
+# Set the bind address to a specific IP (IPv4 or IPv6):
+#
+network.host: [_local_, _site_]
+#
+# Set a custom port for HTTP:
+#
+#http.port: 9200
+#
+# For more information, consult the network module documentation.
+#
+# --------------------------------- Discovery ----------------------------------
+#
+# Pass an initial list of hosts to perform discovery when new node is started:
+# The default list of hosts is ["127.0.0.1", "[::1]"]
+#
+discovery.zen.ping.unicast.hosts: ["172.31.20.46", "172.31.12.119"]
+#
+# Prevent the "split brain" by configuring the majority of nodes (total number of master-eligible nodes / 2 + 1):
+#
+discovery.zen.minimum_master_nodes: 2
+#
+# For more information, consult the zen discovery module documentation.
+#
+# ---------------------------------- Gateway -----------------------------------
+#
+# Block initial recovery after a full cluster restart until N nodes are started:
+#
+#gateway.recover_after_nodes: 3
+#
+# For more information, consult the gateway module documentation.
+#
+# ---------------------------------- Various -----------------------------------
+#
+# Require explicit names when deleting indices:
